@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.core.validators import MinLengthValidator
 
 from constants import NAME_SLUG_MEAS_UNIT_LENGTH
 from .validators import validate_positive
@@ -19,6 +20,7 @@ class Name(models.Model):
 
 
 class Ingredient(Name):
+    measurement_unit = models.CharField(max_length=NAME_SLUG_MEAS_UNIT_LENGTH)
 
     class Meta(Name.Meta):
         verbose_name = 'Ингредиент'
@@ -27,7 +29,10 @@ class Ingredient(Name):
 
 
 class Tag(Name):
-    color = models.CharField(max_length=7, unique=True)
+    name = models.CharField(max_length=NAME_SLUG_MEAS_UNIT_LENGTH, unique=True)
+    color = models.CharField(
+        max_length=7, unique=True, validators=[MinLengthValidator(7)]
+    )
     slug = models.SlugField(max_length=NAME_SLUG_MEAS_UNIT_LENGTH, unique=True)
 
     class Meta(Name.Meta):
@@ -38,12 +43,14 @@ class Tag(Name):
 
 class Recipe(Name):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='recipes/')
+    image = models.ImageField(upload_to='recipes/images')
     text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient'
     )
-    tags = models.ManyToManyField(Tag)
+    tags = models.ManyToManyField(
+        Tag, through='RecipeTag'
+    )
     cooking_time = models.PositiveIntegerField(
         validators=[validate_positive],
     )
@@ -54,11 +61,25 @@ class Recipe(Name):
         default_related_name = 'recipes'
 
 
+class RecipeTag(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = 'Тег рецепта'
+        verbose_name_plural = 'Теги рецепта'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['recipe', 'tag'],
+                name='unique_combination_recipe_tag'
+            )
+        ]
+
+
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(validators=[validate_positive])
-    measurement_unit = models.CharField(max_length=NAME_SLUG_MEAS_UNIT_LENGTH)
 
     class Meta:
         verbose_name = 'Ингредиент рецепта'
