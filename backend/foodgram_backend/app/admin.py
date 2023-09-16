@@ -1,11 +1,10 @@
 from django.contrib import admin
 
-from app.models import Tag, Ingredient
+from app import models
 
 
 class TagAdmin(admin.ModelAdmin):
     list_display = (
-        'id',
         'name',
         'color',
         'slug'
@@ -17,7 +16,6 @@ class TagAdmin(admin.ModelAdmin):
 
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
-        'id',
         'name',
         'measurement_unit'
     )
@@ -26,5 +24,82 @@ class IngredientAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-admin.site.register(Tag, TagAdmin)
-admin.site.register(Ingredient, IngredientAdmin)
+class TagRecipeInline(admin.TabularInline):
+    model = models.Recipe.tags.through
+
+
+class IngredientRecipeInline(admin.TabularInline):
+    model = models.Recipe.ingredients.through
+
+
+class RecipeAdmin(admin.ModelAdmin):
+    inlines = [
+        TagRecipeInline,
+        IngredientRecipeInline
+    ]
+    list_display = (
+        'name',
+        'author',
+        'get_tags',
+        'text',
+        'get_ingredients',
+        'cooking_time',
+        'created',
+    )
+    search_fields = ('name', 'author', 'tags__name')
+    list_filter = ('name', 'author__username')
+    empty_value_display = '-пусто-'
+
+    def get_tags(self, obj):
+        return ', '.join([tag.name for tag in obj.tags.all()])
+
+    get_tags.short_description = 'Тег'
+
+    def get_ingredients(self, obj):
+        return ', '.join(
+            [ingredient.name for ingredient in obj.ingredients.all()])
+
+    get_ingredients.short_description = 'Ингредиент'
+
+    def favorites_count(self, obj):
+        return obj.favorite_recipe.count()
+
+    favorites_count.short_description = 'Добавления в избранное'
+
+    def get_readonly_fields(self, request, obj=None):
+        return tuple('favorites_count',)
+
+
+class TagRecipeAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'tag')
+    list_editable = ('tag',)
+
+
+class IngredientRecipeAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'ingredient')
+    list_editable = ('ingredient',)
+
+
+class FollowAuthorAdmin(admin.ModelAdmin):
+    list_display = ('user', 'following')
+    list_editable = ('following',)
+
+
+class FavoriteRecipeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe')
+    list_editable = ('recipe',)
+
+
+class ShoppingCartRecipeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'recipe')
+    list_editable = ('recipe',)
+
+
+admin.site.register(models.Tag, TagAdmin)
+admin.site.register(models.Ingredient, IngredientAdmin)
+admin.site.register(models.RecipeTag, TagRecipeAdmin)
+admin.site.register(models.RecipeIngredient, IngredientRecipeAdmin)
+admin.site.register(models.Recipe, RecipeAdmin)
+admin.site.register(models.FollowAuthor, FollowAuthorAdmin)
+admin.site.register(models.FavoriteRecipe, FavoriteRecipeAdmin)
+admin.site.register(models.ShoppingCartRecipe, ShoppingCartRecipeAdmin)

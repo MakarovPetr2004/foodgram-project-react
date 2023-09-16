@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.db import models
 from django.core.validators import MinLengthValidator
+from django.db import models
 
 from constants import NAME_SLUG_MEAS_UNIT_LENGTH
 from .validators import validate_positive
@@ -54,11 +54,17 @@ class Recipe(Name):
     cooking_time = models.PositiveIntegerField(
         validators=[validate_positive],
     )
+    created = models.DateTimeField(
+        'Дата создания',
+        auto_now_add=True,
+        db_index=True,
+    )
 
     class Meta(Name.Meta):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         default_related_name = 'recipes'
+        ordering = ('-created',)
 
 
 class RecipeTag(models.Model):
@@ -74,6 +80,7 @@ class RecipeTag(models.Model):
                 name='unique_combination_recipe_tag'
             )
         ]
+        default_related_name = 'recipe_tag'
 
 
 class RecipeIngredient(models.Model):
@@ -90,3 +97,75 @@ class RecipeIngredient(models.Model):
                 name='unique_combination_recipe_ingredient'
             )
         ]
+        default_related_name = 'recipe_ingredient'
+
+
+class FollowAuthor(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Подписчик',
+    )
+    following = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Автор',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'following'],
+                name='unique_user_following'
+            )
+        ]
+        verbose_name = 'Подписчик автора'
+        verbose_name_plural = 'Подписчики авторов'
+
+
+class FavoriteRecipe(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorite_recipe'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='favorited_by'
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_user_recipe'
+            )
+        ]
+        verbose_name = 'Любимый рецепт'
+        verbose_name_plural = 'Любимые рецепты'
+
+
+class ShoppingCartRecipe(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='cart_recipes'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='added_to_cart_by'
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_cart_user_recipe'
+            )
+        ]
+        verbose_name = 'Рецепт в корзине'
+        verbose_name_plural = 'Рецепты в корзинах'
