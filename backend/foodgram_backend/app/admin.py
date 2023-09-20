@@ -45,6 +45,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'get_ingredients',
         'cooking_time',
         'created',
+        'get_favorites_count'
     )
     search_fields = ('name', 'author', 'tags__name')
     list_filter = ('name', 'author__username')
@@ -61,13 +62,10 @@ class RecipeAdmin(admin.ModelAdmin):
 
     get_ingredients.short_description = 'Ингредиент'
 
-    def favorites_count(self, obj):
-        return obj.favorite_recipe.count()
+    def get_favorites_count(self, obj):
+        return obj.favorited_by.count()
 
-    favorites_count.short_description = 'Добавления в избранное'
-
-    def get_readonly_fields(self, request, obj=None):
-        return tuple('favorites_count',)
+    get_favorites_count.short_description = 'Добавления в избранное'
 
 
 class TagRecipeAdmin(admin.ModelAdmin):
