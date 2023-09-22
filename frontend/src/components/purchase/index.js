@@ -21,7 +21,7 @@ const Purchase = ({ image, name, cooking_time, id, handleRemoveFromCart, is_in_s
       </p>
     </div>
     <a
-      href="#"
+      href="frontend/src/components/purchase/index#"
       className={styles.purchaseDelete}
       onClick={_ => handleRemoveFromCart({ id, toAdd: false, callback: updateOrders })}
     >

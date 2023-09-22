@@ -8,7 +8,7 @@ import cn from 'classnames'
 import { useRouteMatch, useParams, useHistory } from 'react-router-dom'
 import MetaTags from 'react-meta-tags'
 
-import { useRecipe } from '../../utils/index.js'
+import { useRecipe } from '../../utils'
 import api from '../../api'
 
 const SingleCard = ({ loadItem, updateOrders }) => {
