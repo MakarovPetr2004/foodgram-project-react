@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('app', '0009_alter_favoriterecipe_user'),
     ]
@@ -12,6 +11,8 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='recipe',
-            options={'default_related_name': 'recipes', 'ordering': ('-created',), 'verbose_name': 'Рецепт', 'verbose_name_plural': 'Рецепты'},
+            options={'default_related_name': 'recipes',
+                     'ordering': ('-created',), 'verbose_name': 'Рецепт',
+                     'verbose_name_plural': 'Рецепты'},
         ),
     ]

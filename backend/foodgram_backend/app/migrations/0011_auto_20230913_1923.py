@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('app', '0010_alter_recipe_options'),
     ]
@@ -12,14 +11,17 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterModelOptions(
             name='favoriterecipe',
-            options={'verbose_name': 'Любимый рецепт', 'verbose_name_plural': 'Любимые рецепты'},
+            options={'verbose_name': 'Любимый рецепт',
+                     'verbose_name_plural': 'Любимые рецепты'},
         ),
         migrations.AlterModelOptions(
             name='followauthor',
-            options={'verbose_name': 'Подписчик автора', 'verbose_name_plural': 'Подписчики авторов'},
+            options={'verbose_name': 'Подписчик автора',
+                     'verbose_name_plural': 'Подписчики авторов'},
         ),
         migrations.AlterModelOptions(
             name='shoppingcartrecipe',
-            options={'verbose_name': 'Рецепт в корзине', 'verbose_name_plural': 'Рецепты в корзине'},
+            options={'verbose_name': 'Рецепт в корзине',
+                     'verbose_name_plural': 'Рецепты в корзине'},
         ),
     ]
