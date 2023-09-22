@@ -1,21 +1,20 @@
 from collections import defaultdict
 
+from api import serializers
+from api.filters import RecipeFilter
+from api.permissions import IsAuthorOrReadOnly
+from app.models import (FavoriteRecipe, FollowAuthor, Ingredient, Recipe,
+                        RecipeIngredient, ShoppingCartRecipe, Tag)
 from django.contrib.auth import get_user_model
-from django.db.models import Q, Count
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
-from rest_framework import viewsets, permissions, status
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from api import serializers
-from api.filters import RecipeFilter
-from api.permissions import IsAuthorOrReadOnly
-from app.models import (Tag, Ingredient, Recipe, FollowAuthor, FavoriteRecipe,
-                        ShoppingCartRecipe, RecipeIngredient)
 
 User = get_user_model()
 
