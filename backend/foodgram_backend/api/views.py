@@ -72,7 +72,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    http_method_names = ('get', 'post', 'put', 'delete')
+    http_method_names = ('get', 'post', 'patch', 'delete')
     queryset = Recipe.objects.all()
     permission_classes = [IsAuthorOrReadOnly]
     filter_class = RecipeFilter
