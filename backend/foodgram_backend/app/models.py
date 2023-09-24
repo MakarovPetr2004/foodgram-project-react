@@ -3,7 +3,6 @@ from django.core.validators import MinLengthValidator
 from django.db import models
 
 from constants import NAME_SLUG_MEAS_UNIT_LENGTH
-
 from .validators import validate_positive
 
 User = get_user_model()
