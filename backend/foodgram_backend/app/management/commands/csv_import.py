@@ -1,8 +1,9 @@
 import csv
 from pathlib import Path
 
-from app.models import Ingredient
 from django.core.management.base import BaseCommand
+
+from app.models import Ingredient
 
 
 class Command(BaseCommand):

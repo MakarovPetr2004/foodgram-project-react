@@ -1,7 +1,8 @@
 import re
 
-from constants import USERNAME_PATTERN
 from rest_framework.exceptions import ValidationError
+
+from constants import USERNAME_PATTERN
 
 
 def regex_validator(value):

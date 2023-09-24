@@ -1,12 +1,7 @@
 from collections import defaultdict
 
-from api import serializers
-from api.filters import RecipeFilter
-from api.permissions import IsAuthorOrReadOnly
-from app.models import (FavoriteRecipe, FollowAuthor, Ingredient, Recipe,
-                        RecipeIngredient, ShoppingCartRecipe, Tag)
 from django.contrib.auth import get_user_model
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
@@ -15,6 +10,12 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from api import serializers
+from api.filters import RecipeFilter
+from api.mixins import AddToCollectionMixin
+from api.permissions import IsAuthorOrReadOnly
+from app import models
 
 User = get_user_model()
 
@@ -51,13 +52,13 @@ class NewUserViewSet(UserViewSet):
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
-    queryset = Tag.objects.all()
+    queryset = models.Tag.objects.all()
     serializer_class = serializers.TagSerializer
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
-    queryset = Ingredient.objects.all()
+    queryset = models.Ingredient.objects.all()
     serializer_class = serializers.IngredientSerializer
 
     def get_queryset(self):
@@ -73,7 +74,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete')
-    queryset = Recipe.objects.all()
+    queryset = models.Recipe.objects.all()
     permission_classes = [IsAuthorOrReadOnly]
     filter_class = RecipeFilter
 
@@ -83,9 +84,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return serializers.RecipeSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
-    def perform_update(self, serializer):
         serializer.save(author=self.request.user)
 
     def get_queryset(self):
@@ -138,26 +136,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
     )
     def download_shopping_cart(self, request):
         user = request.user
-        cart_recipes = ShoppingCartRecipe.objects.filter(user=user)
+        cart_recipes = (
+            models.ShoppingCartRecipe.objects
+            .filter(user=user)
+            .select_related('recipe')
+            .prefetch_related('recipe__ingredients')
+        )
 
         if cart_recipes:
             shopping_list = defaultdict(dict)
 
-            for cart_recipe in cart_recipes:
-                recipe_ingredients = RecipeIngredient.objects.filter(
-                    recipe=cart_recipe.recipe)
-                for ingredient in recipe_ingredients:
-                    ingredient_name = ingredient.ingredient.name
-                    amount = ingredient.amount
-                    measurement_unit = ingredient.ingredient.measurement_unit
+            recipe_ingredients = (
+                models.RecipeIngredient.objects
+                .filter(recipe__in=[cart.recipe for cart in cart_recipes])
+                .values_list('ingredient__name',
+                             'ingredient__measurement_unit')
+                .annotate(amount=Sum('amount'))
+            )
 
-                    if ingredient_name in shopping_list:
-                        shopping_list[ingredient_name]['amount'] += amount
-                    else:
-                        shopping_list[ingredient_name] = {
-                            'amount': amount,
-                            'measurement_unit': measurement_unit
-                        }
+            for (ingredient_name, measurement_unit,
+                 amount) in recipe_ingredients:
+                shopping_list[ingredient_name] = {
+                    'amount': amount,
+                    'measurement_unit': measurement_unit
+                }
 
             response = HttpResponse(content_type='text/plain')
             response[
@@ -194,7 +196,7 @@ class FollowAuthorView(APIView):
             return Response({
                 'errors': 'Нельзя подписаться на самого себя'
             }, status=status.HTTP_400_BAD_REQUEST)
-        follow, created = FollowAuthor.objects.get_or_create(
+        follow, created = models.FollowAuthor.objects.get_or_create(
             user=user, following=following_user
         )
 
@@ -204,10 +206,10 @@ class FollowAuthorView(APIView):
                 context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response({
-                'errors': 'Вы уже подписаны на этого автора'
-            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'errors': 'Вы уже подписаны на этого автора'
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, id):
         user = request.user
@@ -215,99 +217,37 @@ class FollowAuthorView(APIView):
         following = get_object_or_404(User, id=id)
 
         try:
-            follow = FollowAuthor.objects.get(
+            follow = models.FollowAuthor.objects.get(
                 user=user, following_id=following
             )
             follow.delete()
 
             return Response(status=status.HTTP_204_NO_CONTENT)
-        except FollowAuthor.DoesNotExist:
+        except models.FollowAuthor.DoesNotExist:
             return Response({
                 'errors': 'Вы не были подписаны на этого автора'
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-class FavoriteRecipeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+class FavoriteRecipeView(APIView, AddToCollectionMixin):
+    collection_model = models.FavoriteRecipe
 
     def post(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
-
-        user = request.user
-
-        favorite, created = FavoriteRecipe.objects.get_or_create(
-            user=user, recipe=recipe
-        )
-
-        if created:
-            serializer = serializers.ShortenedRecipeReadSerializer(
-                recipe,
-                context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(
-                {'errors': 'Рецепт уже в избранном'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipe = get_object_or_404(models.Recipe, id=id)
+        return self.add_to_collection(request, recipe)
 
     def delete(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
-
-        user = request.user
-
-        try:
-            favorite_recipe = FavoriteRecipe.objects.get(user=user,
-                                                         recipe=recipe)
-            favorite_recipe.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except FavoriteRecipe.DoesNotExist:
-            return Response(
-                {'errors': 'Рецепт не находиться в избранном'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipe = get_object_or_404(models.Recipe, id=id)
+        return self.remove_from_collection(request, recipe)
 
 
-class ShoppingCartRecipeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+class ShoppingCartRecipeView(APIView, AddToCollectionMixin):
+    collection_model = models.ShoppingCartRecipe
 
     def post(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
-
-        user = request.user
-
-        cart, created = ShoppingCartRecipe.objects.get_or_create(
-            user=user, recipe=recipe
-        )
-
-        if created:
-            serializer = serializers.ShortenedRecipeReadSerializer(
-                recipe,
-                context={'request': request}
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(
-                {'errors': 'Рецепт уже в корзине'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipe = get_object_or_404(models.Recipe, id=id)
+        return self.add_to_collection(request, recipe)
 
     def delete(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
-
-        user = request.user
-
-        try:
-            favorite_recipe = ShoppingCartRecipe.objects.get(
-                user=user,
-                recipe=recipe
-            )
-            favorite_recipe.delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except FavoriteRecipe.DoesNotExist:
-            return Response(
-                {'errors': 'Рецепт не находиться в корзине'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipe = get_object_or_404(models.Recipe, id=id)
+        return self.remove_from_collection(request, recipe)

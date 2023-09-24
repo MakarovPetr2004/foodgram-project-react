@@ -1,26 +1,35 @@
-from app import models
 from django.contrib import admin
 
+from app import models
 
-class TagAdmin(admin.ModelAdmin):
-    list_display = (
-        'name',
-        'color',
-        'slug'
-    )
+
+class BaseAdmin(admin.ModelAdmin):
+    list_display = ('name',)
     search_fields = ('name',)
     list_filter = ('name',)
     empty_value_display = '-пусто-'
 
 
-class IngredientAdmin(admin.ModelAdmin):
-    list_display = (
-        'name',
-        'measurement_unit'
-    )
-    search_fields = ('name',)
-    list_filter = ('name',)
-    empty_value_display = '-пусто-'
+@admin.register(models.Tag)
+class TagAdmin(BaseAdmin):
+    list_display = ('name', 'color', 'slug')
+
+
+@admin.register(models.Ingredient)
+class IngredientAdmin(BaseAdmin):
+    list_display = ('name', 'measurement_unit')
+
+
+@admin.register(models.RecipeTag)
+class TagRecipeAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'tag')
+    list_editable = ('tag',)
+
+
+@admin.register(models.RecipeIngredient)
+class IngredientRecipeAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'ingredient')
+    list_editable = ('ingredient',)
 
 
 class TagRecipeInline(admin.TabularInline):
@@ -31,33 +40,24 @@ class IngredientRecipeInline(admin.TabularInline):
     model = models.Recipe.ingredients.through
 
 
+@admin.register(models.Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    inlines = [
-        TagRecipeInline,
-        IngredientRecipeInline
-    ]
-    list_display = (
-        'name',
-        'author',
-        'get_tags',
-        'text',
-        'get_ingredients',
-        'cooking_time',
-        'created',
-        'get_favorites_count'
-    )
-    search_fields = ('name', 'author', 'tags__name')
+    list_display = ('name', 'author', 'get_tags', 'text', 'get_ingredients',
+                    'cooking_time', 'created', 'get_favorites_count')
+    search_fields = ('name', 'author__username', 'tags__name')
     list_filter = ('name', 'author__username')
     empty_value_display = '-пусто-'
+    inlines = [TagRecipeInline, IngredientRecipeInline]
 
     def get_tags(self, obj):
-        return ', '.join([tag.name for tag in obj.tags.all()])
+        tags_qs = obj.tags.all()
+        return ', '.join(tags_qs.values_list('name', flat=True))
 
     get_tags.short_description = 'Тег'
 
     def get_ingredients(self, obj):
-        return ', '.join(
-            [ingredient.name for ingredient in obj.ingredients.all()])
+        ingredients_qs = obj.ingredients.all()
+        return ', '.join(ingredients_qs.values_list('name', flat=True))
 
     get_ingredients.short_description = 'Ингредиент'
 
@@ -67,36 +67,19 @@ class RecipeAdmin(admin.ModelAdmin):
     get_favorites_count.short_description = 'Добавления в избранное'
 
 
-class TagRecipeAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'tag')
-    list_editable = ('tag',)
-
-
-class IngredientRecipeAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'ingredient')
-    list_editable = ('ingredient',)
-
-
+@admin.register(models.FollowAuthor)
 class FollowAuthorAdmin(admin.ModelAdmin):
     list_display = ('user', 'following')
     list_editable = ('following',)
 
 
+@admin.register(models.FavoriteRecipe)
 class FavoriteRecipeAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     list_editable = ('recipe',)
 
 
+@admin.register(models.ShoppingCartRecipe)
 class ShoppingCartRecipeAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     list_editable = ('recipe',)
-
-
-admin.site.register(models.Tag, TagAdmin)
-admin.site.register(models.Ingredient, IngredientAdmin)
-admin.site.register(models.RecipeTag, TagRecipeAdmin)
-admin.site.register(models.RecipeIngredient, IngredientRecipeAdmin)
-admin.site.register(models.Recipe, RecipeAdmin)
-admin.site.register(models.FollowAuthor, FollowAuthorAdmin)
-admin.site.register(models.FavoriteRecipe, FavoriteRecipeAdmin)
-admin.site.register(models.ShoppingCartRecipe, ShoppingCartRecipeAdmin)
