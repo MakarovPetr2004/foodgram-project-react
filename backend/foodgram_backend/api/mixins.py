@@ -1,14 +1,17 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions
 from rest_framework.response import Response
 
 from api.serializers import ShortenedRecipeReadSerializer
+from app import models
 
 
 class AddToCollectionMixin:
     permission_classes = [permissions.IsAuthenticated]
     collection_model = None
 
-    def add_to_collection(self, request, recipe):
+    def post(self, request, id):
+        recipe = get_object_or_404(models.Recipe, id=id)
         user = request.user
         collection, created = self.collection_model.objects.get_or_create(
             user=user, recipe=recipe
@@ -26,7 +29,9 @@ class AddToCollectionMixin:
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    def remove_from_collection(self, request, recipe):
+    def delete(self, request, id):
+        recipe = get_object_or_404(models.Recipe, id=id)
+
         user = request.user
 
         try:

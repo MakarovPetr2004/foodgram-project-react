@@ -57,13 +57,32 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Ingredient
-        fields = ['id', 'amount']
+        fields = ('id', 'amount')
+
+
+class RecipeIngredientAmountSerializer(serializers.ModelSerializer):
+    ingredient_id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit'
+    )
+
+    class Meta:
+        model = models.RecipeIngredient
+        fields = (
+            'ingredient_id',
+            'name',
+            'measurement_unit',
+            'amount',
+        )
 
 
 class RecipeReadSerializer(serializers.ModelSerializer):
     author = IsSubUserSerializer()
     tags = TagSerializer(many=True)
-    ingredients = serializers.SerializerMethodField()
+    ingredients = RecipeIngredientAmountSerializer(
+        source='recipe_ingredient', many=True
+    )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
@@ -84,18 +103,18 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields
 
-    @staticmethod
-    def get_ingredients(obj):
-        recipe_ingredients = models.RecipeIngredient.objects.filter(recipe=obj)
-        return [
-            {
-                'id': ri.ingredient.id,
-                'name': ri.ingredient.name,
-                'measurement_unit': ri.ingredient.measurement_unit,
-                'amount': ri.amount
-            }
-            for ri in recipe_ingredients
-        ]
+    # @staticmethod
+    # def get_ingredients(obj):
+    #     recipe_ingredients = models.RecipeIngredient.objects.filter(recipe=obj)
+    #     return [
+    #         {
+    #             'id': ri.ingredient.id,
+    #             'name': ri.ingredient.name,
+    #             'measurement_unit': ri.ingredient.measurement_unit,
+    #             'amount': ri.amount
+    #         }
+    #         for ri in recipe_ingredients
+    #     ]
 
     def get_is_favorited(self, obj):
         user = self.context['request'].user
@@ -195,9 +214,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
 
         super().update(instance, validated_data)
 

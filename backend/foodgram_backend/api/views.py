@@ -30,8 +30,7 @@ class NewUserViewSet(UserViewSet):
     )
     def me(self, request, *args, **kwargs):
         self.get_object = self.get_instance
-        if request.method == "GET":
-            return self.retrieve(request, *args, **kwargs)
+        return self.retrieve(request, *args, **kwargs)
 
     @action(
         methods=["get"],
@@ -99,9 +98,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'is_in_shopping_cart'
         )
 
-        if is_favorited not in ('0', '1') and is_favorited:
+        if is_favorited not in (None, '0', '1'):
             raise ValidationError("is_favorited должен быть '0' или '1'.")
-        if is_in_shopping_cart not in ('0', '1') and is_in_shopping_cart:
+        if is_in_shopping_cart not in (None, '0', '1'):
             raise ValidationError(
                 "is_in_shopping_cart должен быть '0' или '1'."
             )
@@ -151,13 +150,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 .filter(recipe__in=[cart.recipe for cart in cart_recipes])
                 .values_list('ingredient__name',
                              'ingredient__measurement_unit')
-                .annotate(amount=Sum('amount'))
+                .annotate(amount_sum=Sum('amount'))
             )
 
             for (ingredient_name, measurement_unit,
-                 amount) in recipe_ingredients:
+                 amount_sum) in recipe_ingredients:
                 shopping_list[ingredient_name] = {
-                    'amount': amount,
+                    'amount': amount_sum,
                     'measurement_unit': measurement_unit
                 }
 
@@ -232,22 +231,7 @@ class FollowAuthorView(APIView):
 class FavoriteRecipeView(APIView, AddToCollectionMixin):
     collection_model = models.FavoriteRecipe
 
-    def post(self, request, id):
-        recipe = get_object_or_404(models.Recipe, id=id)
-        return self.add_to_collection(request, recipe)
-
-    def delete(self, request, id):
-        recipe = get_object_or_404(models.Recipe, id=id)
-        return self.remove_from_collection(request, recipe)
-
 
 class ShoppingCartRecipeView(APIView, AddToCollectionMixin):
     collection_model = models.ShoppingCartRecipe
 
-    def post(self, request, id):
-        recipe = get_object_or_404(models.Recipe, id=id)
-        return self.add_to_collection(request, recipe)
-
-    def delete(self, request, id):
-        recipe = get_object_or_404(models.Recipe, id=id)
-        return self.remove_from_collection(request, recipe)
