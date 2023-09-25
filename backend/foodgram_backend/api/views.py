@@ -234,4 +234,3 @@ class FavoriteRecipeView(APIView, AddToCollectionMixin):
 
 class ShoppingCartRecipeView(APIView, AddToCollectionMixin):
     collection_model = models.ShoppingCartRecipe
-
