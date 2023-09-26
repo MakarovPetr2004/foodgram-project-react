@@ -156,7 +156,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             for (ingredient_name, measurement_unit,
                  amount_sum) in recipe_ingredients:
                 shopping_list[ingredient_name] = {
-                    'amount': amount_sum,
+                    'amount_sum': amount_sum,
                     'measurement_unit': measurement_unit
                 }
 
@@ -167,7 +167,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
             response.write('Список покупок:\n\n')
             for ingredient_name, info in shopping_list.items():
-                amount = info['amount']
+                amount = info['amount_sum']
                 measurement_unit = info['measurement_unit']
                 response.write(
                     f'{ingredient_name} — {amount}'
