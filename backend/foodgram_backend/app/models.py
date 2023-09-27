@@ -77,7 +77,7 @@ class Recipe(Name):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
         default_related_name = 'recipes'
-        ordering = ('-created',)
+        ordering = ('created',)
 
 
 class RecipeTag(models.Model):
