@@ -5,7 +5,7 @@ _Foodgram_ — a website on which users will publish recipes, add other people's
 * [Website and Admin data](#website-and-admin-data)
 * [Local launch](#local-launch)
 * [Technologies](#technologies)
-* [Author](#authors)
+* [Authors](#authors)
 
 ## Website and Admin data
 - Link: https://foodgram-makarov.ddns.net/
