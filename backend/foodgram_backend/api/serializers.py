@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from api.fields import Base64ImageField
-from app import models
+from app import models, validators
 
 User = get_user_model()
 
@@ -53,7 +53,10 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientRecipeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
-    amount = serializers.IntegerField(source='recipe_ingredient_amount')
+    amount = serializers.IntegerField(
+        source='recipe_ingredient_amount',
+        validators=[validators.validate_positive]
+    )
 
     class Meta:
         model = models.Ingredient
@@ -61,7 +64,7 @@ class IngredientRecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientAmountSerializer(serializers.ModelSerializer):
-    ingredient_id = serializers.ReadOnlyField(source='ingredient.id')
+    id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit'
@@ -70,7 +73,7 @@ class RecipeIngredientAmountSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RecipeIngredient
         fields = (
-            'ingredient_id',
+            'id',
             'name',
             'measurement_unit',
             'amount',
@@ -226,13 +229,13 @@ class UserRecipeSerializer(IsSubUserSerializer, serializers.ModelSerializer):
         )
 
     def get_recipes_count(self, obj):
-        max_recipes = int(self.context['request'].query_params.get(
-            'recipes_limit', 1))
-        return max_recipes
+        count = obj.recipes.count()
+        return count
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        max_recipes = data.pop('recipes_count')
+        max_recipes = int(self.context['request'].query_params.get(
+            'recipes_limit', 3))
         recipes = instance.recipes.all()[:max_recipes]
         serialized_recipes = ShortenedRecipeReadSerializer(
             recipes, many=True).data
