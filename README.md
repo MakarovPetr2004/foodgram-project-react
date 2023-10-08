@@ -2,15 +2,10 @@
 _Foodgram_ — a website on which users will publish recipes, add other people's recipes to favorites and subscribe to publications of other authors. Users of the site will also have access to the “Shopping List” service. It will allow you to create a list of products that you need to buy to prepare the selected dishes.
 
 ## Table of contents
-* [Website and Admin data](#website-and-admin-data)
 * [Local launch](#local-launch)
 * [Technologies](#technologies)
 * [Authors](#authors)
 
-## Website and Admin data
-- Link: https://foodgram-makarov.ddns.net/
-- Login: admin@admin.com
-- Password: admin
 
 ## Local launch
 - Go to _infra_ folder and type: ```docker compose up --build```
