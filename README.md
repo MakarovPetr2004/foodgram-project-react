@@ -2,9 +2,9 @@
 _Foodgram_ — сайт, на котором пользователи будут публиковать рецепты, добавлять чужие рецепты в избранное и подписываться на публикации других авторов. Пользователям сайта также будет доступен сервис «Список покупок». Он позволит вам сформировать список продуктов, которые необходимо купить для приготовления выбранных блюд.
 
 ## Table of contents
-* [Local launch](#local-launch)
-* [Technologies](#technologies)
-* [Authors](#authors)
+* [Локальный запуск](#локальный-запуск)
+* [Технологии](#технологии)
+* [Авторы](#авторы)
 
 
 ## Локальный запуск
@@ -14,7 +14,7 @@ _Foodgram_ — сайт, на котором пользователи будут
 docker compose exec backend python manage.py makemigrations
 docker compose exec backend python manage.py migrate
 ```
-- CСоберите статику для _backend_
+- Соберите статику для _backend_
 ```sh 
 docker compose exec backend python manage.py collectstatic
 ```
@@ -27,6 +27,6 @@ docker compose exec backend python manage.py collectstatic
 - Djoser 2.2.0
 
 ## Авторы
-* [Makarov Petr](https://github.com/MakarovPetr2004)
+* [Макаров Пётр](https://github.com/MakarovPetr2004)
 
 
