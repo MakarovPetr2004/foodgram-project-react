@@ -19,7 +19,7 @@ docker compose exec backend python manage.py migrate
 docker compose exec backend python manage.py collectstatic
 ```
 
-## Технологии
+## Технологии:
 - Python 3.9
 - Django 3.2.3
 - Pillow 9.0.0
